@@ -1,0 +1,21 @@
+
+# TEST
+@data: 0xFF, 0xF2, "ЁHello EBVC!", 0x00;
+@offset: 0x100;
+
+=main:
+    set: ra,   0; # 5
+    set: rb, 0x1;
+    set: rc,  -8; # 6
+    add: ra,  rb; # 1
+    sub: rb,  rc;
+    lda: rc,  rd; # 2
+    sta: rd,  ra;
+    beq: ra,  rb; # 3
+    bnq: rb,  rc;
+    slt: rd,  ra; # 4
+    smt: ra,  rb;
+    jmp: =main;
+    jmp: -12;
+    jmp: 0xD;
+    int;

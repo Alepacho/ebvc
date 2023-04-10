@@ -1,0 +1,20 @@
+# Демонстрация бесконечного цикла через ветвления и переходы
+@offset: 0x100;
+
+=main:
+    # jmp: =beq_option;
+    # jmp: =bnq_option;
+    jmp: =jmp_option;
+=beq_option:
+    # Вариант с использованием beq
+    set: rb, -1;
+    beq: ra, rb; # if (ra == 0) pc += (signed)rb;
+=bnq_option:
+    # Вариант с использованием bnq
+	set: ra, +1;
+	set: rb, -1;
+    bnq: ra, rb; # if (ra != 0) pc += (signed)rb;
+=jmp_option:
+    set: rd, +0;
+    int;
+    jmp: =jmp_option;

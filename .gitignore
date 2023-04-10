@@ -1,0 +1,12 @@
+ebvc
+ebvc.exe
+ebvc.bin
+ebvc.out
+a.out
+
+.hidden
+.vscode
+.DS_Store
+ebvc.dSYM
+
+out.log

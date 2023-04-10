@@ -1,0 +1,6 @@
+@offset: 0x100;
+
+=main:
+    set: ra, +1;
+	set: rb, -1;
+    bnq: ra, rb;

@@ -1,0 +1,40 @@
+# Made by Alepacho, 2023y.
+
+# = PATTERN =====================
+# 11 00 11 00 | 0xCC (204 / -052)
+# ===============================
+
+@offset: 0x100;
+
+# ra : адрес
+# rb : значение
+# rc : счетчик 1
+# rd : счетчик 2
+
+=main:
+    set: ra,  0;
+    set: rb,  0;
+    set: rc,  2; # ставим счетчик 1
+    set: rd,  0;
+
+    sub: rb, rc; # rb = 256 - 2 = 254 
+    add: rb, rb; # rb = 254 + 254 = 252
+    add: rb, rb; # rb = 252 + 252 = 248
+    add: rb, rb; # rb = 248 + 248 = 240
+    add: rb, rb; # rb = 240 + 240 = 224
+    set: rc,  5; add: rc, rc;
+    sub: rb, rc; # 214
+    sub: rb, rc; # 204
+
+    set: rc,  5; #
+    set: rd, -3; # pc = ... =loop
+=loop:
+    sta: ra, ra;
+    add: ra, rc;
+    bnq: ra, rd;
+=floop:
+    jmp: =main;
+    set: rd, 0; int;
+
+
+

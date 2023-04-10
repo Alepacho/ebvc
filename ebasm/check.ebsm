@@ -1,0 +1,63 @@
+# Easy peasy example of making checkerboard in EBASM.
+# Made by Alepacho, 2023y.
+
+# UPD: получился фрактал какой-то по итогу
+
+# = PATTERN =====================
+# 11 00 11 00 | 0xCC (204 / -052)
+# 00 11 00 11 | 0x33 (051 / +051)
+# 10 10 10 10 | 0xAA (170 / -086)
+# 01 01 01 01 | 0x55 (085 / +085)
+# ===============================
+
+@offset: 0x100;
+
+# ra : адрес
+# rb : значение
+# rc : счетчик 1
+# rd : счетчик 2
+
+=main:
+    set: ra,  0;
+    set: rb,  0;
+    set: rc,  2; # ставим счетчик 1
+    set: rd,  0;
+
+    sub: rb, rc; # rb = 256 - 2 = 254 
+    add: rb, rb; # rb = 254 + 254 = 252
+    add: rb, rb; # rb = 252 + 252 = 248
+    add: rb, rb; # rb = 248 + 248 = 240
+    add: rb, rb; # rb = 240 + 240 = 224
+    set: rc,  5; add: rc, rc;
+    sub: rb, rc; # 214
+    sub: rb, rc; # 204
+
+    # set: rb, 4;         # 4
+    #     add: rb, rb;    # 16
+    #     add: rb, rb;    # 32
+    #     add: rb, rb;    # 64
+    # add: rd, rb;        # rd = 64
+    #     add: rb, rb;    # 128
+    # add: rb, rd;        # rb = 128 + 64 = 192
+    # set: rd,  7;
+    #     sub: rb, rd;    # rb = 192 - 7 = 185
+    #     sub: rb, rd;    # rb = 185 - 7 = 178
+    #     sub: rb, rd;    # rb = 178 - 7 = 171
+    # set: rd,  2;
+    # sub: rb, rd;        # rb = 171 - 1 = 170
+
+    # add: rb, rb; # 256
+    # add: rb, rb; # 512
+    #
+    # break
+    set: rc,  1; #
+    set: rd, -3; # pc = ... =loop
+=loop:
+    sta: rb, ra;
+    add: ra, rc;
+    # sub: rb, rc;
+    bnq: ra, rd;
+=floop:
+    jmp: =main;
+    set: rd, 0;
+    int;

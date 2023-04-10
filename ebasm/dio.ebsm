@@ -1,0 +1,46 @@
+# Simple "Hello World" Example using SYSE.
+# Registers:
+# RA = Address
+# RB = const 1
+# RC = Data
+# RD = Device Input/Output
+
+# @data: =onclick;
+@data: 0x01;                    # 0x00: system/console/output
+@offset: 0x10;
+@data: "Hello, EBVC!", 0x0A, 0x00;
+
+@offset: 0x100;                 # Program start position
+=main:
+    clr;
+    set: rb, 1;
+
+    # load system/console/output command
+    set: ra, 0x00;              #
+    lda: ra,   rd;              # rd = data[ra]
+
+    # Get "Hello EBVC!" address
+    set: ra, 4;                 # ra = 4
+    add: ra, ra;                # ra = 4 + 4 = 8
+    add: ra, ra;                # ra = 8 + 8 = 16 (0x10)
+    
+    # Let's go
+    jmp: =hello;
+=exit:                          # Program Exit.
+    clr;
+    set: rd,  0;                # exit
+    dio;                        
+=retry:
+    clr;
+    jmp: =main;
+=hello:                         # Console Output.
+    pts;                        # ram[sp--] = rd
+    lda: ra,    rc;             # (rc = data[ra])
+    add: ra,    rb;             # ra++
+    # set: rd, =retry;
+    set: rd, =exit;
+    beq: rc,    rd;             # exit on 0x00
+    pfs;                        # rd = ram[++sp]
+    dio;
+    jmp: =hello;                # Loop until 0x00
+

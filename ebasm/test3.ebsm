@@ -1,0 +1,15 @@
+# python3 ./ebasm.py -i ./ebasm/test.asm
+@data: 0xFF, 0xFF, "This is a test!", 0x00;
+@data: 0xFF;
+@offset: 0x100;
+@macro: (noop: a, b, c) {
+
+}
+=main:
+    set: rb, +1;
+    add: ra, rb;
+=test:
+    jmp: 0x02;  #  2
+    jmp: =test; # -1
+    jmp: -1;    # -1
+    int;

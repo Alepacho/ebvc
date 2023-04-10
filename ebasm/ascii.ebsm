@@ -1,0 +1,30 @@
+# Draws ASCII Symbols.
+# ra : beq address
+# rb : 128
+# rc : counter
+# rd : dio command
+
+@data: 0x00; # 00: SYSE: exit
+@data: 0x07; # 01: SYSE: console.write
+@data: 0x20; # 02: 032 for rc
+@data: 0x7E; # 03: 126 for rb
+
+@offset: 0x100;
+
+=main:  clr;
+        set: rd, 0; lda: rd, rd; pts;
+        set: rd, 1; lda: rd, rd; pts;
+        set: rc, 2; lda: rc, rc;
+        set: rb, 3; lda: rb, rb;
+=loop:  inc: rc;
+        pfs; dio; pts;
+        set: rd,     0; add: rd, rc; # rd = rc
+        smt: rd,    rb;
+        set: ra, =exit;
+        bnq: rd,    ra;
+        jmp: =loop;
+=exit:  clr;
+        pfs; pfs; dio;
+
+
+        
