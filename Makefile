@@ -1,7 +1,8 @@
 # C config
 CNAME 	= ebvc
 CC 		= clang
-CFLAGS 	= -std=c99 -g -Wall -O2
+CFLAGS 	= -std=c99 -g -Wall -pedantic -O2 -Wno-gnu-binary-literal
+# -Wno-comment
 CLIB    = `sdl2-config --libs`
 CINC    = `sdl2-config --cflags`
 OUTPATH = .
@@ -9,7 +10,8 @@ SRCPATH = ./src
 SOURCES = \
 	$(SRCPATH)/main.c \
 	$(SRCPATH)/ebvc.c \
-	$(SRCPATH)/devi/syse.c
+	$(SRCPATH)/devi/syse.c \
+	$(SRCPATH)/devi/dise.c
 
 .PHONY: ebvc
 

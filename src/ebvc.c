@@ -67,7 +67,12 @@ ebvc_result ebvc_eval(ebvc_t* ebvc) {
         } break;
         case 0x01: {
             switch (mode) {
-                case 0x00: ebvc_eval_add(ebvc, (REG)r1, (REG)r2); break;
+                case 0x00: {
+                    if (r1 == r2) 
+                        ebvc_eval_shl(ebvc, (REG)r1);
+                    else
+                        ebvc_eval_add(ebvc, (REG)r1, (REG)r2);
+                 } break;
                 case 0x01: {
                     switch (in & 0b00001111) {
                         case 0b0000: ebvc_eval_clr(ebvc); break;
@@ -136,6 +141,7 @@ ebvc_result ebvc_set_output(ebvc_t* ebvc, ebvc_output output) {
 }
 
 void ebvc_eval_add(ebvc_t* ebvc, REG r1, REG r2) { ebvc->reg[r1] += ebvc->reg[r2]; }
+void ebvc_eval_shl(ebvc_t* ebvc, REG r1) { ebvc->reg[r1] = ebvc->reg[r1] << 1; } // same as r1 + r1
 void ebvc_eval_sub(ebvc_t* ebvc, REG r1, REG r2) { ebvc->reg[r1] -= ebvc->reg[r2]; }
 void ebvc_eval_clr(ebvc_t* ebvc) { for (ubyte i = 0; i < COUNT; i++) ebvc->reg[i] = 0; }
 void ebvc_eval_gsr(ebvc_t* ebvc) { ebvc->reg[RD] = ebvc->sr; }
@@ -231,7 +237,9 @@ OPCODE ebvc_debug_opcode(ebvc_t* ebvc, ubyte opcode) {
         } break;
         case 0x01: {
             switch (r) {
-                case 0x00: result = ADD; printf("ADD"); break;
+                case 0x00: {
+                    if (r1 == r2) { result = SHL; printf("SHL"); } else { result = ADD; printf("ADD"); }
+                } break;
                 case 0x01: {
                     
                     if (r1 == r2) {
@@ -289,7 +297,7 @@ void ebvc_debug_data(ebvc_t* ebvc, OPCODE opcode, ubyte data) {
         case GSR: printf("SR = %i;", ebvc->sr); break;
         case PTS: printf("RD = %i;", ebvc->reg[RD]); break;
         case PFS: printf("SP = %i;", ebvc->ram[ebvc->sp]); break;
-        case DEC: case INC: {
+        case SHL: case DEC: case INC: {
             const ubyte r = (data & 0b0011);
              ebvc_debug_reg(ebvc, (REG)r); printf(": %i;", ebvc->reg[r]);
         } break;

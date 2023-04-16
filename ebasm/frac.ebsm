@@ -4,6 +4,7 @@
 # 11 00 11 00 | 0xCC (204 / -052)
 # ===============================
 
+@data: 204;
 @offset: 0x100;
 
 # ra : адрес
@@ -12,29 +13,18 @@
 # rd : счетчик 2
 
 =main:
-    set: ra,  0;
-    set: rb,  0;
-    set: rc,  2; # ставим счетчик 1
-    set: rd,  0;
+    set: rc,  0; # указатель в памяти
+    lda: rc, rb; # rb = ram[rc]
 
-    sub: rb, rc; # rb = 256 - 2 = 254 
-    add: rb, rb; # rb = 254 + 254 = 252
-    add: rb, rb; # rb = 252 + 252 = 248
-    add: rb, rb; # rb = 248 + 248 = 240
-    add: rb, rb; # rb = 240 + 240 = 224
-    set: rc,  5; add: rc, rc;
-    sub: rb, rc; # 214
-    sub: rb, rc; # 204
-
-    set: rc,  5; #
+    set: rc,  7; #
     set: rd, -3; # pc = ... =loop
 =loop:
-    sta: ra, ra;
+    sta: ra, rb;
     add: ra, rc;
     bnq: ra, rd;
-=floop:
+=retry:
     jmp: =main;
-    set: rd, 0; int;
+    clr; dio;
 
 
 

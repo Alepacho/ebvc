@@ -51,7 +51,7 @@ def parse(file):
     keywords = {
         k.upper(): pp.Keyword(k)
         for k in """\
-        dio jmp add sub clr gsr pts pfs lda sta beq bnq slt dec smt inc set
+        dio jmp add shl sub clr gsr pts pfs lda sta beq bnq slt dec smt inc set
         """.split()
     }
     vars().update(keywords)
@@ -121,7 +121,8 @@ def parse(file):
                 pp.Keyword("pfs")
     
     itype_op2 = (pp.Keyword("inc") + COLON + any_registers) | \
-                (pp.Keyword("dec") + COLON + any_registers)
+                (pp.Keyword("dec") + COLON + any_registers) | \
+                (pp.Keyword("shl") + COLON + any_registers)
     
     instr_itype = (itype_op | itype_op2) + SEMIC
 
@@ -177,6 +178,7 @@ def get_opcode(op):
     match op:
         case 'jmp' | 'dio': return 0x00
         case 'add': return 0b0100
+        case 'shl': return 0b0100 # and rr rr
         case 'sub': return 0b0101
         case 'clr': return 0b01010000 # TODO: доделать
         case 'gsr': return 0b01010101
@@ -313,7 +315,7 @@ def translate(nodes):
                     error("TRANSLATE::OPCODE::SET", f"Unknown data: f{n[2]}!")
                 
                 if (val < -8 or val > 7):
-                    error("TRANSLATE::OPCODE::SET", f"Value '{val}' is too far! (set can be in -8 .. 7 range)")
+                    error("TRANSLATE::OPCODE::SET", f"Value '{val}' is out of range! (set can be in -8 .. 7)")
 
                 val = get_number(val, 0b1111) 
                 data[pc] = opcode << 6 | reg << 4 | val
@@ -332,7 +334,7 @@ def translate(nodes):
                     error(f"TRANSLATE::OPCODE::{str(n[0]).upper()}", f"Invalid opcode! You can't use same registers ({n[1]} with {n[2]})")
                 data[pc] = opcode << 4 | r1 << 2 | r2
                 pc += 1
-            case 'inc' | 'dec':
+            case 'inc' | 'dec' | 'shl':
                 opcode = get_opcode(n[0])
                 r1 = get_register(n[1])
                 data[pc] = opcode << 4 | r1 << 2 | r1

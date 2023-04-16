@@ -6,7 +6,9 @@ a.out
 
 .hidden
 .vscode
+.cache
 .DS_Store
 ebvc.dSYM
+compile_commands.json
 
 out.log

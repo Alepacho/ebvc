@@ -4,7 +4,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
+
 #include <stdbool.h>
+// typedef unsigned  char bool;
+// #define true  1
+// #define false 0
 
 typedef unsigned  char ubyte;
 typedef   signed  char sbyte;
@@ -18,7 +22,7 @@ typedef enum RESULT {
     NO_DEVICE,
     NOT_EMPTY,
     NO_FILE,
-    UNKNOWN,
+    UNKNOWN
 } ebvc_result;
 
 typedef enum REG {
@@ -27,14 +31,14 @@ typedef enum REG {
 
 typedef enum OPCODE {
     DIO, JMP,
-    ADD, SUB,
-    CLR, GSR, 
-    PTS, PFS,
-    LDA, STA,
-    BEQ, BNQ,
-    SLT, DEC, 
-    SMT, INC,
-    SET,
+    ADD, SHL,
+    SUB, CLR, 
+    GSR, PTS, 
+    PFS, LDA, 
+    STA, BEQ, 
+    BNQ, SLT, 
+    DEC, SMT, 
+    INC, SET,
     IDK // UNKNOWN OPCODE
 } OPCODE;
 
@@ -83,6 +87,7 @@ ebvc_result ebvc_set_input(ebvc_t* ebvc, ebvc_input input);
 ebvc_result ebvc_set_output(ebvc_t* ebvc, ebvc_output output);
 
 void ebvc_eval_add(ebvc_t* ebvc, REG r1, REG r2);
+void ebvc_eval_shl(ebvc_t* ebvc, REG r1);
 void ebvc_eval_sub(ebvc_t* ebvc, REG r1, REG r2);
 void ebvc_eval_clr(ebvc_t* ebvc);
 void ebvc_eval_gsr(ebvc_t* ebvc);
