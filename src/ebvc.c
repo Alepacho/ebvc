@@ -13,18 +13,18 @@ ebvc_result ebvc_init(ebvc_t* ebvc, uword ram_size) {
     for (uword i = 0; i < ram_size; i++) ebvc->ram[i] = rand();
 
     // ebvc->speed  = 25000; // 2.5 MHz
-    ebvc->reg[0] = 0;
-    ebvc->reg[1] = 0;
-    ebvc->reg[2] = 0;
-    ebvc->reg[3] = 0;
-    ebvc->pc     = 0;
-    ebvc->sr     = 0;
-    ebvc->sp     = ram_size - 1;
-    ebvc->v4     = 0;
-    ebvc->v6     = 0;
-
-    ebvc->input  = NULL;
-    ebvc->output = NULL;
+    ebvc->working = true;
+    ebvc->reg[0]  = 0;
+    ebvc->reg[1]  = 0;
+    ebvc->reg[2]  = 0;
+    ebvc->reg[3]  = 0;
+    ebvc->pc      = 0;
+    ebvc->sr      = 0;
+    ebvc->sp      = ram_size - 1;
+    ebvc->v4      = 0;
+    ebvc->v6      = 0;
+    ebvc->input   = NULL;
+    ebvc->output  = NULL;
 
     return SUCCESS;
 }
@@ -48,6 +48,7 @@ ebvc_result ebvc_load(ebvc_t* ebvc, const char* path) {
 // * Execution
 ebvc_result ebvc_eval(ebvc_t* ebvc) {
     if (ebvc == NULL) return NO_DEVICE;
+    if (ebvc->working == false) return NOT_WORKING;
     // if (((ebvc->sr & 0b10000000) >> 7) == 1) return SYS_BREAK;
 
     const ubyte in = ebvc->ram[ebvc->pc];
@@ -155,14 +156,13 @@ void ebvc_eval_dio(ebvc_t* ebvc) {
     const ubyte  reg = ebvc->reg[RD];
     const ubyte   io = (reg & 0b10000000) >> 7;
     const ubyte port = (reg & 0b01110000) >> 4;
-    const ubyte mode = reg & 0b00001111;
-
-    if (io) { // output
-        if (ebvc->debug_mode == 1) printf("output: %i, %i\n", port, mode);
-        if (ebvc->output != NULL) ebvc->output(ebvc, port, mode); // ! <------ notice if you want to change DST (rd) register
-    } else { // input
+    const ubyte mode =  reg & 0b00001111;
+    if (io) {
         if (ebvc->debug_mode == 1) printf("input: %i, %i\n", port, mode);
         if (ebvc->input != NULL) ebvc->reg[RD] = ebvc->input(ebvc, port, mode);
+    } else {
+        if (ebvc->debug_mode == 1) printf("output: %i, %i\n", port, mode);
+        if (ebvc->output != NULL) ebvc->output(ebvc, port, mode);
     }
 }
 void ebvc_eval_beq(ebvc_t* ebvc, REG r1, REG r2) { if (ebvc->reg[r1] == 0) { ebvc->pc += (sbyte)ebvc->reg[r2]; ebvc->pc--; } }
@@ -176,7 +176,6 @@ void ebvc_eval_set(ebvc_t* ebvc, REG reg, ubyte value) { ebvc->v4 = value; ebvc-
 void ebvc_debug(ebvc_t* ebvc) {
     if (ebvc->debug_mode == 0) return;
     printf(" ********* DEBUG INFO ********* \n");
-    
     
     uword bin = ebvc->pc;
     printf("PC    : 0b%d%d%d%d %d%d%d%d %d%d%d%d (%#05x)\n",
@@ -333,6 +332,7 @@ ubyte ebvc_check(ebvc_t* ebvc, ebvc_result result) {
     unsigned char r = 0; // no good
     switch (result) {
         case SUCCESS: r = 1; break;
+        case NOT_WORKING: break;
         // case SYS_BREAK: printf("SYS BREAK\n"); break;
         case NO_DEVICE:
             printf("ERROR at %#05x: No Device Found!\n", ebvc->pc);

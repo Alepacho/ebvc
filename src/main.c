@@ -1,8 +1,11 @@
+#include <stdlib.h>
 #include <stdio.h>
 #include <assert.h>
 
 #include "ebvc.h"
 #include "devi/syse.h"
+#include "devi/dise.h"
+#include "devi/keye.h"
 
 #include "SDL2/SDL.h"
 
@@ -26,7 +29,25 @@ Memory Map:
 00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00
 00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00
 00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00
-= 0x100 .. 0xDFF ======================== CODE =
+= 0x100 .. 0x1FF ===================== DISPLAY =
+00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00
+00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00
+00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00
+00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00
+00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00
+00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00
+00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00
+00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00
+
+00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00
+00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00
+00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00
+00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00
+00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00
+00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00
+00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00
+00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00
+= 0x200 .. 0xF80 ======================== CODE =
 .......................  .......................
 .......................  .......................
 .......................  .......................
@@ -44,15 +65,25 @@ Memory Map:
 .......................  .......................
 .......................  .......................
 .......................  .......................
+= 0xF80 .. 0xFFF ======================= STACK =
+00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00
+00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00
+00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00
+00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00
+00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00
+00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00
+00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00
+00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00
 = 0x1000 ================================= END =
 */
 
-
+#define SW 64
+#define SH 32
+#define MEM_SIZE 4096
 typedef struct emu_t {
     SDL_Window* window;
     SDL_Renderer* renderer;
     SDL_Texture* texture;
-    bool working;
     unsigned long now, last, frame;
     bool step_mode;
     bool keydown_enter;
@@ -61,35 +92,28 @@ typedef struct emu_t {
 
 emu_t emu;
 ebvc_t ebvc;
+dise_t dise;
+keye_t keye;
 char* filepath = NULL;
-const int mem_size = 4096;
-const uint32_t color = 0x88FF78;
-
-// Screen
-const int SW = 64, SH = 32;
-const float HS = 1.25f;
-
 
 void emu_stop() {
-    emu.working = false;
+    ebvc.working = false;
     ebvc_debug(&ebvc);
 }
 
 void emu_error(const char* msg, const char* info) {
     printf("%s %s\n", msg, info);
-    // exit(1);
     emu_stop();
 }
 
 void emu_init() {
     printf("\nEMU INIT\n");
-    emu.working = true;
-    emu.scale = 10;
+    emu.scale = 13;
 
     if (SDL_Init(SDL_INIT_EVERYTHING) < 0) emu_error("SDL", "Failed to init!");
     emu.window = SDL_CreateWindow("EBVC", 
         SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
-        SW * emu.scale, SH * HS * emu.scale,
+        SW * emu.scale, SH * emu.scale,
         SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE
     );
     if (emu.window == NULL) emu_error("SDL", "Failed to create window!");
@@ -108,36 +132,22 @@ void emu_term() {
 }
 
 void emu_render() {
-    int *pixels = NULL;
+    void *pixels = NULL;
     int pitch;
-    if (SDL_LockTexture(emu.texture, NULL, (void **)&pixels, &pitch)) emu_error("SDL", "Can't lock texture!");
-
-    // const uword vram_size   = SW * SH / 8;
-    const uword vram_offset = 0;//ebvc.ram_size - vram_size;
-    for (int i = 0; i < SW * SH; i += 8) {
-        const ubyte p = ebvc.ram[vram_offset + i / 8];
-        pixels[i    ] = (p & 0b00000001)      ? color : 0;
-        pixels[i + 1] = (p & 0b00000010) >> 1 ? color : 0;
-        pixels[i + 2] = (p & 0b00000100) >> 2 ? color : 0;
-        pixels[i + 3] = (p & 0b00001000) >> 3 ? color : 0;
-        pixels[i + 4] = (p & 0b00010000) >> 4 ? color : 0;
-        pixels[i + 5] = (p & 0b00100000) >> 5 ? color : 0;
-        pixels[i + 6] = (p & 0b01000000) >> 6 ? color : 0;
-        pixels[i + 7] = (p & 0b10000000) >> 7 ? color : 0;
-    }
-
+    if (SDL_LockTexture(emu.texture, NULL, &pixels, &pitch)) emu_error("SDL", "Can't lock texture!");
+    dise_render(&dise, &ebvc, pixels);
     SDL_UnlockTexture(emu.texture);
 
-    // SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
-    SDL_SetRenderDrawColor(emu.renderer, 255, 96, 128, 255);
+    SDL_SetRenderDrawColor(emu.renderer, 0, 0, 0, 255);
+    // SDL_SetRenderDrawColor(emu.renderer, 255, 96, 128, 255);
     SDL_RenderClear(emu.renderer);
 
     int WW, WH;
     SDL_GetWindowSize(emu.window, &WW, &WH);
-    int RATIO = fmin((float)WW * 0.99 / (float)SW, (float)WH * 0.99 / (float)(SH * HS));
+    int RATIO = fmin((float)WW * 0.99 / (float)SW, (float)WH * 0.99 / (float)(SH));
     SDL_Rect spos;
     spos.x = (int)(WW - SW * RATIO) / 2; spos.w = (int)(SW * RATIO);
-    spos.y = (int)(WH - (SH * HS) * RATIO) / 2; spos.h = (int)((SH * HS) * RATIO);
+    spos.y = (int)(WH - (SH) * RATIO) / 2; spos.h = (int)((SH) * RATIO);
     
     if (SDL_RenderCopy(emu.renderer, emu.texture, NULL, &spos)) emu_error("SDL", "Unable to render copy!");
     SDL_Rect viewport = { 0, 0, WW, WH };
@@ -151,26 +161,30 @@ void emu_update() {
     emu.frame = emu.now + interval;
 
     SDL_Event event;
+    // bool keys[256];
 
+    // Uint8* keys = (Uint8*)SDL_GetKeyboardState(NULL);
+    bool keys[KEYE_KEYS_COUNT] = {0};
     while (SDL_PollEvent(&event)) {
         switch (event.type) {
             case SDL_QUIT: emu_stop(); break;
             case SDL_WINDOWEVENT: {
-                if (event.window.event == SDL_WINDOWEVENT_CLOSE) {
-                    emu_stop();
-                }
-                // if (event.window.event == SDL_WINDOWEVENT_RESIZED) {
-                // }
+                if (event.window.event == SDL_WINDOWEVENT_CLOSE) emu_stop();
             } break;
             case SDL_KEYDOWN: {
                 if (event.key.keysym.sym == SDLK_RETURN) emu.keydown_enter = true;
-                
+                // printf("key: %i\n", event.key.keysym.sym);
+                if (event.key.keysym.sym >= 0 
+                &&  event.key.keysym.sym < 256) keys[event.key.keysym.sym] = true;
             } break;
             default: ;
         }
     }
+    
+    // const unsigned char* keys = 
+    keye_update(&keye, (ubyte*)keys);
 
-    // emu_render();
+    emu_render();
 
     emu.last = emu.now;
     emu.now = SDL_GetPerformanceCounter();
@@ -187,7 +201,7 @@ void emu_save() {
     FILE *fp = NULL;
     fp = fopen("./saved.rom" ,"wb");
     if (fp != NULL) {
-        fwrite(ebvc.ram, mem_size * sizeof(ubyte), 1, fp);
+        fwrite(ebvc.ram, MEM_SIZE * sizeof(ubyte), 1, fp);
         fclose(fp);
     }
 }
@@ -220,20 +234,22 @@ void emu_parse(int argc, char* argv[]) {
     }
 }
 
+// что-то получить из устройства (receive / get)
 ubyte emu_ebvc_input(ebvc_t* ebvc, ubyte port, ubyte mode) {
     switch (port) {
-        case 0b000: { // SYSE
-            ubyte r = syse_input(ebvc, mode);
-            if (mode == SYSE_IN_BREAK) emu_stop();
-            return r;
-        } break;
+        case 0b000: return syse_input(ebvc, mode);          break;
+        case 0b001: return dise_input(&dise, ebvc, mode);   break;
+        case 0b010: return keye_input(&keye, ebvc, mode);   break;
     }
     return rand() % 256;
 }
 
+// что-то отправить в устройство (send / set)
 void emu_ebvc_output(ebvc_t* ebvc, ubyte port, ubyte mode) {
     switch (port) {
-        case 0b000: syse_output(ebvc, mode); break;
+        case 0b000: syse_output(ebvc, mode);        break;
+        case 0b001: dise_output(&dise, ebvc, mode); break;
+        case 0b010: keye_output(&keye, ebvc, mode); break;
     }
 }
 
@@ -241,22 +257,19 @@ int main(int argc, char* argv[]) {
     emu_init();
     if (argc > 1) emu_parse(argc, argv);
 
-    assert(ebvc_check(&ebvc, ebvc_init(&ebvc, mem_size)));
-    if (filepath != NULL) emu.working = ebvc_check(&ebvc, ebvc_load(&ebvc, filepath));
-    ebvc_set_pc(&ebvc, 0x100);
-    ebvc_set_input(&ebvc, (ebvc_input)emu_ebvc_input);
+    assert(ebvc_check(&ebvc, ebvc_init(&ebvc, MEM_SIZE)));
+    dise_init(&dise, SW, SH, 0x100);
+    keye_init(&keye);
+    if (filepath != NULL) ebvc.working = ebvc_check(&ebvc, ebvc_load(&ebvc, filepath));
+    ebvc_set_pc(&ebvc, 0x200);
+    ebvc_set_input(&ebvc,  (ebvc_input)emu_ebvc_input);
     ebvc_set_output(&ebvc, (ebvc_output)emu_ebvc_output);
     // emu_save();
 
-    printf("SCREEN SIZE : %i bytes.\n", SW * SH / 8);
-    printf("SCREEN SCALE: %i\n", emu.scale);
-    printf("\n");
-    // printf("SCREEN OFFSET: %i\n", mem_size - SW * SH / 8);
-
-    while (emu.working) {
+    while (ebvc.working) {
         bool eval = true;
         emu_update();
-        if (!emu.working) break;
+        if (!ebvc.working) { emu_stop(); break; }
 
         if (emu.step_mode) {
             eval = false;
@@ -265,10 +278,12 @@ int main(int argc, char* argv[]) {
 
         if (eval) {
             ebvc_debug(&ebvc);
-            if (!ebvc_check(&ebvc, ebvc_eval(&ebvc))) emu.working = false;
+            if (!ebvc_check(&ebvc, ebvc_eval(&ebvc))) ebvc.working = false;
         }
     }
 
+    keye_term(&keye);
+    dise_term(&dise);
     ebvc_term(&ebvc);
     emu_term();
     return 0;

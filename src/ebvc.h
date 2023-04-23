@@ -22,6 +22,7 @@ typedef enum RESULT {
     NO_DEVICE,
     NOT_EMPTY,
     NO_FILE,
+    NOT_WORKING,
     UNKNOWN
 } ebvc_result;
 
@@ -42,10 +43,6 @@ typedef enum OPCODE {
     IDK // UNKNOWN OPCODE
 } OPCODE;
 
-typedef enum PORT {
-    SYSTEM, PORT1, PORT2, PORT3
-} PORT;
-
 struct EBVC;
 
 typedef ubyte(*ebvc_input) (struct EBVC* ebvc, ubyte port, ubyte mode); // what ebvc will send to device  (data from reg)
@@ -53,6 +50,7 @@ typedef void (*ebvc_output)(struct EBVC* ebvc, ubyte port, ubyte mode); // what 
 
 typedef struct EBVC {
     // uint speed;
+    bool working;
     bool  debug_mode;
     uword ram_size;
     ubyte *ram;
@@ -60,9 +58,9 @@ typedef struct EBVC {
     ubyte sr; // status register
     uword pc : 12;
     uword sp : 12;
-    sbyte v4 :  4; // [-8  .. 7 ] used for set instruction
+    sbyte v4 :  4; // [-8  ..  7] used for set instruction
     sbyte v6 :  6; // [-32 .. 31] used for jmp instruction
-    // status register bits:
+    // status register bits: (draft)
     // 0 bit: Stack Overflow    (sp > 256)
     // 1 bit: Stack Underflow   (sp < 0)
     // 2 bit: Carry             (add/sub)
