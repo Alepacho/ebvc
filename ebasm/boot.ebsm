@@ -1,0 +1,39 @@
+# Boot 
+@data: 0x18; # 0x00 : 0 001 1000 : OUT.DISE.MODE
+@data: 0xA2; # 0x01 : 1 010 0010 : IN.KEYE.PRESS[RC]
+@data: 0x20; # 0x02 : space key
+
+# display data
+@offset: 0x100;
+# page 1
+@data: 0xCE, 0xCE, 0xCE, 0xCE, 0xCE, 0xCE, 0xCE, 0xCE, 0xCE, 0xCE, 0xCE, 'ebvc', 0xCE;
+@data: '                ';
+@data: '                ';
+@data: '                ';
+@data: '                ';
+@data: '                ';
+@data: '                ';
+@data: '                ';
+# page 2
+@data: '                ';
+@data: '                ';
+@data: '                ';
+@data: '                ';
+@data: '                ';
+@data: '                ';
+@data: '                ';
+@data: '                ';
+
+@offset: 0x200;
+=main:
+        clr;
+        set: rd, 0x00; lda: rd, rd; dio;
+        set: ra, 4; # beq: rd, +4;
+=loop:
+        set: rc, 0x02; lda: rc, rc;
+        set: rd, 0x01; lda: rd, rd; dio;
+        bnq: rd, ra;
+        jmp: =loop;
+=exit:  clr; dio;
+=test:  clr; dio;
+        jmp: =loop;

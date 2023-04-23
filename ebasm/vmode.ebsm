@@ -1,0 +1,34 @@
+@data: 0x18; # 0 001 1000 : OUTPUT.DISE.MODE
+
+@offset: 0x100;
+# normal symbols
+@data: '                ' ;
+@data: '                ' ;
+@data: ' !"#$%&\'()*+,-./';
+@data: '0123456789:;<=>?' ;
+@data: '@ABCDEFGHIJKLMNO' ;
+@data: 'PQRSTUVWXYZ[\\]^_';
+@data: '`abcdefghijklmno' ;
+@data: 'pqrstuvwxyz{|}~ ' ;
+# inverted symbols
+@data: "                " ;
+@data: "                " ;
+@data: " !\"#$%&'()*+,-./";
+@data: "0123456789:;<=>?" ;
+@data: "@ABCDEFGHIJKLMNO" ;
+@data: "PQRSTUVWXYZ[\\]^_";
+@data: "`abcdefghijklmno" ;
+@data: "pqrstuvwxyz{|}~ " ;
+
+@offset: 0x200;
+=main:  clr;
+        set: ra,  0;         # address
+        lda: ra, rd;         # change display mode
+        dio;
+        jmp: =begin;
+=loop:  clr;
+        jmp: =loop;
+=begin: 
+        jmp: =loop;
+
+

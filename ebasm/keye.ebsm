@@ -1,0 +1,32 @@
+# Keye (Keyboard) example. Draft
+# zero-page
+@data: 0x00; # 0x00 : 0 000 0000 : OUT.SYSE.BREAK
+@data: 0x01; # 0x01 : 0 000 0001 : OUT.SYSE.PRINT
+@data: 0x18; # 0x02 : 0 001 1000 : OUT.DISE.MODE
+@data: 0xA0; # 0x03 : 1 010 0000 : IN.KEYE.PRESS[RA]
+
+# display data
+@offset: 0x100;
+@data: '                ', '                ';
+@data: '                ', '                ';
+@data: '                ', '                ';
+@data: '                ', '                ';
+@data: '                ', '                ';
+@data: '                ', '                ';
+@data: '                ', '                ';
+@data: '                ', '                ';
+
+
+# source code
+@offset: 0x200;
+=main:  clr;
+        jmp: =loop;
+# =exit:  set: rd, 0x00; lda: rd, rd; dio;                      # dio(BREAK)
+=loop:  set: rd, 0x03; lda: rd, rd; dio;                        # RD = dio(PRESS[RA])
+        set: rc, 4; set: rb, =print; add: rb, rc; bnq: rd, ra;  # if (rd != 0) print();
+        inc: ra; jmp: =loop;
+=print: clr;
+        set: rd, 0x02; lda: rd, rd; dio;                        # dio(MODE)
+        jmp: =loop;
+        # jmp: =exit;
+        

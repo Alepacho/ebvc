@@ -1,0 +1,58 @@
+# This example draws ASCII Table in DISE.
+# zero-page
+@data: 0x00; # 0x00 : 0 000 0000 : OUT.SYSE.BREAK
+@data: 0x01; # 0x01 : 0 000 0001 : OUT.SYSE.PRINT
+@data: 0x18; # 0x02 : 0 001 1000 : OUT.DISE.MODE
+@data: 0x12; # 0x03 : 0 001 0010 : OUT.DISE.DATA[RA] = RC
+@data: 0x00; # 0x04 : address  offset
+@data: 0x00; # 0x05 : table    offset
+@data: 0x80; # 0x06 : table    offset acc
+@data: 0x02; # 0x07 : function offset (jump to =invrt)
+
+# display data
+@offset: 0x100;
+@data: '                ', '                ';
+@data: '                ', '                ';
+@data: '                ', '                ';
+@data: '                ', '                ';
+@data: '                ', '                ';
+@data: '                ', '                ';
+@data: '                ', '                ';
+@data: '                ', '                ';
+
+# negative zero-page
+@offset: 0x0F8;
+@data: 0x80; # 0xF8 : max page size (128)
+@data: 0x03; # func offset
+# source code
+@offset: 0x200;
+=main:
+        set: ra, 0x04; lda: ra, ra;             # ra = address offset
+        set: rc, 0x05; lda: rc, rc;             # rc = table offset 1
+        set: rb, 0x07; lda: rb, rb;             # rb = *(beq: ra, rb;) ± offset
+
+        set: rd, 0x02; lda: rd, rd; dio;        # dio(DISE.MODE)
+        set: rd, 0x03; lda: rd, rd;             # rd = DISE.DATA
+        jmp: =loop;
+=loop:  # ra : address
+        # rc : symbol
+        # rd : device
+        dio;                                            # dise[ra] = rc
+        inc: ra; inc: rc;                               # ra++; rc++;
+        pts;                                            # push rd
+                set: rd, -8; lda: rd, rd;               # rd = 128
+                sub: rd, ra;                            # rd = rd - ra
+                set: rb, -7; lda: rb, rb; beq: rd, rb;  # if (rd == 0) invert();
+        pfs;                                            # pop rd
+        # set: rb, 0x07; lda: rb, rb; beq: ra, rb;        # if (ra == 0) invert();
+        jmp:  =loop;
+=invrt: # ( rd ) rc, rd
+        pfs;
+        # set: ra, 0;
+        # set: rc, 0;
+        pts;                                    # push rd
+                set: rd, 0x00; add: rd, rc;     # rd  = rc
+                set: rc, 0x06; lda: rc, rc;     # rc  = table offset acc
+                add: rc, rd;                    # rc += rd
+        pfs;                                    # pop rd
+        jmp: =loop;
