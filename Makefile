@@ -11,7 +11,8 @@ SOURCES = \
 	$(SRCPATH)/main.c \
 	$(SRCPATH)/ebvc.c \
 	$(SRCPATH)/devi/syse.c \
-	$(SRCPATH)/devi/dise.c
+	$(SRCPATH)/devi/dise.c \
+	$(SRCPATH)/devi/keye.c
 
 .PHONY: ebvc
 

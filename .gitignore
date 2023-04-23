@@ -12,3 +12,7 @@ ebvc.dSYM
 compile_commands.json
 
 out.log
+
+out.rom
+
+# roms/*

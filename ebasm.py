@@ -75,8 +75,18 @@ def parse(file):
 
     # hex_value <-
     hex_value = pp.Literal("0x").suppress() + ppc.hex_integer
-    number = hex_value | ppc.number
-    string = pp.QuotedString("'") | pp.QuotedString('"')
+    number = (hex_value | ppc.number) # ("number")
+    normal_text = pp.QuotedString("'", '\\', multiline=True)("single_quotes") # unquoteResults=False,
+    revers_text = pp.QuotedString('"', "\\", multiline=True)("double_quotes") # unquoteResults=False,
+    # normal_text.
+    def convert_string(instring, loc, toks):
+        print(f'loc: {loc}, toks: {toks}')
+        if (toks[0][0] == '"'):
+            return [ toks[0], True ]
+        else:
+            return  [ toks[0], False ]
+    string = normal_text | revers_text
+    # string.set_parse_action(convert_string)
     label = pp.Literal("=") + word
 
     instr_define = word + pp.Optional(
@@ -113,13 +123,14 @@ def parse(file):
     # instr_rtype <- rtype_op : reg , reg ;
     instr_rtype = rtype_op + COLON + any_registers + COMMA + any_registers + SEMIC
 
-    # instr_itype <- dio ;
+    # instr_itype <- dio | clr | gsr | pts | pfs ;
     itype_op =  pp.Keyword("dio") | \
                 pp.Keyword("clr") | \
                 pp.Keyword("gsr") | \
                 pp.Keyword("pts") | \
                 pp.Keyword("pfs")
     
+    # itype_op2 <- (inc | dec | shl) : reg ;
     itype_op2 = (pp.Keyword("inc") + COLON + any_registers) | \
                 (pp.Keyword("dec") + COLON + any_registers) | \
                 (pp.Keyword("shl") + COLON + any_registers)
@@ -127,10 +138,10 @@ def parse(file):
     instr_itype = (itype_op | itype_op2) + SEMIC
 
     # instr_ctype <- word : ((reg | number) , )+ ;
-    instr_ctype = word + pp.Optional(COLON + pp.delimitedList(any_registers | string | number)) + SEMIC
+    # instr_ctype = word + pp.Optional(COLON + pp.delimitedList(any_registers | string | number)) + SEMIC
 
-    # instr_stat <- instr_int
-    instr_stat = instr_itype | instr_rtype | instr_stype | instr_jtype | instr_ctype
+    # instr_stat <- instr_dio
+    instr_stat = instr_itype | instr_rtype | instr_stype | instr_jtype#  | instr_ctype
 
     # comment <- # ... \n
     comment = pp.Literal("#") + pp.restOfLine
@@ -153,12 +164,20 @@ def parse(file):
     entry = pp.ZeroOrMore(statements)#
     entry.ignore(comment)
 
+    # for key, val in entry.items():
+    #     entry[key] = val.setResultsName(key)
+
     try:
         # print(f"SOURCE: \n{src}\n")
         nodes = entry.parseFile(file, parseAll=True)
         if SHOW_DEBUG:
             # print(nodes.dump())
+            # nnodes = nodes.asDict()
+            print(repr(nodes))
+            # print(nodes.getName("single_quote"))
+            print("NODES DUMP:")
             nodes.pprint()
+            # print(nodes.dump())
 
         # print(nodes)
     except pp.ParseException as pe:
@@ -262,6 +281,8 @@ def translate(nodes):
                             data[pc] = get_number(nn, 0b1111_1111)
                             pc += 1
                         elif isinstance(nn, str): # put every char
+                            # print(nn.)
+                            # print(n)
                             for s in nn:
                                 data[pc] = get_char(s)
                                 pc += 1
